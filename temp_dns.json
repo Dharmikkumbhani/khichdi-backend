@@ -1,0 +1,1 @@
+[{"name":"ac-aynjibw-shard-00-01.kqthfju.mongodb.net","port":27017,"priority":0,"weight":0,"type":"SRV"},{"name":"ac-aynjibw-shard-00-02.kqthfju.mongodb.net","port":27017,"priority":0,"weight":0,"type":"SRV"},{"name":"ac-aynjibw-shard-00-00.kqthfju.mongodb.net","port":27017,"priority":0,"weight":0,"type":"SRV"}]

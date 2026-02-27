@@ -6,6 +6,14 @@ const hotelSchema = new mongoose.Schema({
         required: true,
         unique: true
     },
+    name: {
+        type: String,
+        required: false
+    },
+    hotelName: {
+        type: String,
+        required: false
+    },
     role: {
         type: String,
         default: "hotel"

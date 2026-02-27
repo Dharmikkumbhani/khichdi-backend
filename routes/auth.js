@@ -48,7 +48,7 @@ router.post('/send-otp', otpLimiter, async (req, res) => {
         // For development, we'll just log it.
         console.log(`[MOCK SMS] OTP for ${mobileNumber} is: ${otpCode}`);
 
-        res.status(200).json({ success: true, message: 'OTP sent successfully' });
+        res.status(200).json({ success: true, message: 'OTP sent successfully', otp: otpCode });
     } catch (error) {
         console.error('Error sending OTP:', error);
         res.status(500).json({ success: false, message: 'Server error' });
@@ -59,7 +59,7 @@ router.post('/send-otp', otpLimiter, async (req, res) => {
 // @desc    Verify OTP and return JWT
 router.post('/verify-otp', async (req, res) => {
     try {
-        const { mobileNumber, otp } = req.body;
+        const { mobileNumber, otp, name, hotelName } = req.body;
 
         if (!mobileNumber || !otp) {
             return res.status(400).json({ success: false, message: 'Mobile number and OTP are required' });
@@ -78,9 +78,18 @@ router.post('/verify-otp', async (req, res) => {
         // Retrieve or create Hotel user
         let hotel = await Hotel.findOne({ mobileNumber });
         if (!hotel) {
-            hotel = new Hotel({ mobileNumber, role: 'hotel' });
-            await hotel.save();
+            hotel = new Hotel({
+                mobileNumber,
+                name: name || "",
+                hotelName: hotelName || "",
+                role: 'hotel'
+            });
+        } else {
+            // Update existing user with new details if provided
+            if (name) hotel.name = name;
+            if (hotelName) hotel.hotelName = hotelName;
         }
+        await hotel.save();
 
         // Generate JWT Token
         const payload = {
