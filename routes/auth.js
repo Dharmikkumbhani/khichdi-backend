@@ -37,18 +37,35 @@ router.post('/send-otp', otpLimiter, async (req, res) => {
             { upsert: true, new: true, setDefaultsOnInsert: true }
         );
 
-        // HERE: In a production app, you would integrate Twilio or another SMS provider.
-        // For example:
-        // await twilioClient.messages.create({
-        //     body: `Your Hotel Login OTP is: ${otpCode}. It expires in 5 minutes.`,
-        //     from: process.env.TWILIO_PHONE_NUMBER,
-        //     to: mobileNumber
-        // });
+        // ---------------------------------------------------------
+        // REAL SMS FALLBACK USING LOCAL ANDROID SMS GATEWAY APP
+        // ---------------------------------------------------------
+        // NOTE: Replace the ANDROID_SMS_GATEWAY_URL in your `.env` file!
+        // Example url formatting from apps: 'http://192.168.1.15:8080/v1/sms/send'
+        try {
+            const smsGatewayUrl = process.env.ANDROID_SMS_GATEWAY_URL;
+            if (smsGatewayUrl) {
+                const defaultAxios = require('axios');
+                const message = `Your Hotel Login OTP is: ${otpCode}. Please do not share this with anyone.`;
 
-        // For development, we'll just log it.
-        console.log(`[MOCK SMS] OTP for ${mobileNumber} is: ${otpCode}`);
+                try {
+                    await defaultAxios.post(smsGatewayUrl, {
+                        phone: mobileNumber,
+                        message: message
+                    });
+                    console.log(`[SMS SUCCESS] Sent OTP to ${mobileNumber} via Local Android Gateway`);
+                } catch (smsError) {
+                    console.error("[SMS ERROR] Failed to reach Android Phone SMS Gateway:");
+                    console.error(smsError.message);
+                }
+            } else {
+                console.log(`[MOCK SMS] OTP for ${mobileNumber} is: ${otpCode}`);
+            }
+        } catch (e) {
+            console.error("General error in SMS local block", e);
+        }
 
-        res.status(200).json({ success: true, message: 'OTP sent successfully', otp: otpCode });
+        res.status(200).json({ success: true, message: 'OTP sent successfully', mockOtp: otpCode });
     } catch (error) {
         console.error('Error sending OTP:', error);
         res.status(500).json({ success: false, message: 'Server error' });
