@@ -30,19 +30,44 @@ router.post('/upload', auth, upload.single('menuImage'), async (req, res) => {
             return res.status(400).json({ success: false, message: 'No image provided' });
         }
 
+        // Check if menu for today already exists
+        // Check if menu for today already exists
+        let existingMenu = null;
+        const latestMenu = await Menu.findOne({ hotelId: req.user.hotelId }).sort({ date: -1 });
+
+        if (latestMenu) {
+            const today = new Date();
+            const menuDate = new Date(latestMenu.date);
+
+            // Check if they are the exact same local day
+            if (menuDate.getDate() === today.getDate() &&
+                menuDate.getMonth() === today.getMonth() &&
+                menuDate.getFullYear() === today.getFullYear()) {
+                existingMenu = latestMenu;
+            }
+        }
+
+        const note = req.body.note || '';
+
         // Detect if the keys are placeholders or not provided
         if (!process.env.IMAGEKIT_PUBLIC_KEY || process.env.IMAGEKIT_PUBLIC_KEY === 'your_imagekit_public_key' || !imagekit) {
-            // For testing purposes when ImageKit is not fully configured, fake an URL so user can still see frontend logic work.
             console.log('[MOCK IMAGEKIT UPLOAD] ImageKit credentials missing. Faking successful upload.');
-
-            // Base64 encode the image to send back for mock view purposes, so the UI actually shows what they picked
             const b64 = 'data:' + req.file.mimetype + ';base64,' + req.file.buffer.toString('base64');
-            const newMenu = new Menu({
-                hotelId: req.user.hotelId,
-                imageUrl: b64 // storing base64 inline temporarily as mock
-            });
-            await newMenu.save();
-            return res.status(200).json({ success: true, message: 'Menu uploaded locally (MOCK mode)', menu: newMenu });
+
+            if (existingMenu) {
+                existingMenu.imageUrl = b64;
+                existingMenu.note = note;
+                await existingMenu.save();
+                return res.status(200).json({ success: true, message: 'Menu updated locally (MOCK mode)', menu: existingMenu });
+            } else {
+                const newMenu = new Menu({
+                    hotelId: req.user.hotelId,
+                    imageUrl: b64, // storing base64 inline temporarily as mock
+                    note: note
+                });
+                await newMenu.save();
+                return res.status(200).json({ success: true, message: 'Menu uploaded locally (MOCK mode)', menu: newMenu });
+            }
         }
 
         // Upload to ImageKit
@@ -52,14 +77,21 @@ router.post('/upload', auth, upload.single('menuImage'), async (req, res) => {
             folder: '/menus'
         });
 
-        // Save menu record
-        const newMenu = new Menu({
-            hotelId: req.user.hotelId,
-            imageUrl: uploadResponse.url
-        });
-        await newMenu.save();
-
-        res.status(200).json({ success: true, message: 'Menu uploaded successfully', menu: newMenu });
+        if (existingMenu) {
+            existingMenu.imageUrl = uploadResponse.url;
+            existingMenu.note = note;
+            await existingMenu.save();
+            return res.status(200).json({ success: true, message: 'Menu updated successfully', menu: existingMenu });
+        } else {
+            // Save menu record
+            const newMenu = new Menu({
+                hotelId: req.user.hotelId,
+                imageUrl: uploadResponse.url,
+                note: note
+            });
+            await newMenu.save();
+            return res.status(200).json({ success: true, message: 'Menu uploaded successfully', menu: newMenu });
+        }
     } catch (error) {
         console.error('Error uploading menu:', error);
         res.status(500).json({ success: false, message: 'Server error during upload', error: error.message });
