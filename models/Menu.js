@@ -10,6 +10,10 @@ const menuSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    note: {
+        type: String,
+        default: ''
+    },
     date: {
         type: Date,
         default: Date.now

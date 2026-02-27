@@ -39,7 +39,8 @@ router.post('/upload', auth, upload.single('menuImage'), async (req, res) => {
             const b64 = 'data:' + req.file.mimetype + ';base64,' + req.file.buffer.toString('base64');
             const newMenu = new Menu({
                 hotelId: req.user.hotelId,
-                imageUrl: b64 // storing base64 inline temporarily as mock
+                imageUrl: b64, // storing base64 inline temporarily as mock
+                note: req.body.note || ''
             });
             await newMenu.save();
             return res.status(200).json({ success: true, message: 'Menu uploaded locally (MOCK mode)', menu: newMenu });
@@ -55,7 +56,8 @@ router.post('/upload', auth, upload.single('menuImage'), async (req, res) => {
         // Save menu record
         const newMenu = new Menu({
             hotelId: req.user.hotelId,
-            imageUrl: uploadResponse.url
+            imageUrl: uploadResponse.url,
+            note: req.body.note || ''
         });
         await newMenu.save();
 
@@ -74,6 +76,56 @@ router.get('/history', auth, async (req, res) => {
         res.status(200).json({ success: true, menus });
     } catch (error) {
         console.error('Error fetching menus:', error);
+        res.status(500).json({ success: false, message: 'Server error fetching menus' });
+    }
+});
+
+// @route   GET /api/menu/today
+// @desc    Get today's menus from all hotels (PUBLIC - no auth required)
+router.get('/today', async (req, res) => {
+    try {
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+
+        const menus = await Menu.find({ date: { $gte: startOfDay } })
+            .populate('hotelId', 'hotelName name mobileNumber')
+            .sort({ date: -1 });
+
+        res.status(200).json({ success: true, menus });
+    } catch (error) {
+        console.error('Error fetching today menus:', error);
+        res.status(500).json({ success: false, message: 'Server error fetching menus' });
+    }
+});
+
+// @route   GET /api/menu/latest
+// @desc    Get the most recent menu for each hotel (PUBLIC - no auth required)
+router.get('/latest', async (req, res) => {
+    try {
+        const menus = await Menu.aggregate([
+            { $sort: { date: -1 } },
+            {
+                $group: {
+                    _id: '$hotelId',
+                    latestMenu: { $first: '$$ROOT' }
+                }
+            },
+            { $replaceRoot: { newRoot: '$latestMenu' } },
+            { $sort: { date: -1 } },
+            {
+                $lookup: {
+                    from: 'hotels',
+                    localField: 'hotelId',
+                    foreignField: '_id',
+                    as: 'hotel'
+                }
+            },
+            { $unwind: '$hotel' }
+        ]);
+
+        res.status(200).json({ success: true, menus });
+    } catch (error) {
+        console.error('Error fetching latest menus:', error);
         res.status(500).json({ success: false, message: 'Server error fetching menus' });
     }
 });
