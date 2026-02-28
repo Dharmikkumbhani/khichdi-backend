@@ -100,8 +100,16 @@ router.post('/upload', auth, upload.single('menuImage'), async (req, res) => {
 // @desc    Get all past menus for the logged in hotel
 router.get('/history', auth, async (req, res) => {
     try {
-        const menus = await Menu.find({ hotelId: req.user.hotelId }).sort({ date: -1 });
-        res.status(200).json({ success: true, menus });
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const skip = (page - 1) * limit;
+
+        const menus = await Menu.find({ hotelId: req.user.hotelId })
+            .sort({ date: -1 })
+            .skip(skip)
+            .limit(limit);
+
+        res.status(200).json({ success: true, menus, page, limit });
     } catch (error) {
         console.error('Error fetching menus:', error);
         res.status(500).json({ success: false, message: 'Server error fetching menus' });
@@ -112,14 +120,20 @@ router.get('/history', auth, async (req, res) => {
 // @desc    Get today's menus from all hotels (PUBLIC - no auth required)
 router.get('/today', async (req, res) => {
     try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const skip = (page - 1) * limit;
+
         const startOfDay = new Date();
         startOfDay.setHours(0, 0, 0, 0);
 
         const menus = await Menu.find({ date: { $gte: startOfDay } })
             .populate('hotelId', 'hotelName name mobileNumber')
-            .sort({ date: -1 });
+            .sort({ date: -1 })
+            .skip(skip)
+            .limit(limit);
 
-        res.status(200).json({ success: true, menus });
+        res.status(200).json({ success: true, menus, page, limit });
     } catch (error) {
         console.error('Error fetching today menus:', error);
         res.status(500).json({ success: false, message: 'Server error fetching menus' });
@@ -130,6 +144,10 @@ router.get('/today', async (req, res) => {
 // @desc    Get the most recent menu for each hotel (PUBLIC - no auth required)
 router.get('/latest', async (req, res) => {
     try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const skip = (page - 1) * limit;
+
         const menus = await Menu.aggregate([
             { $sort: { date: -1 } },
             {
@@ -148,10 +166,12 @@ router.get('/latest', async (req, res) => {
                     as: 'hotel'
                 }
             },
-            { $unwind: '$hotel' }
+            { $unwind: '$hotel' },
+            { $skip: skip },
+            { $limit: limit }
         ]);
 
-        res.status(200).json({ success: true, menus });
+        res.status(200).json({ success: true, menus, page, limit });
     } catch (error) {
         console.error('Error fetching latest menus:', error);
         res.status(500).json({ success: false, message: 'Server error fetching menus' });

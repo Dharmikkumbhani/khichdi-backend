@@ -4,7 +4,8 @@ const menuSchema = new mongoose.Schema({
     hotelId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Hotel',
-        required: true
+        required: true,
+        index: true
     },
     imageUrl: {
         type: String,
@@ -16,7 +17,8 @@ const menuSchema = new mongoose.Schema({
     },
     date: {
         type: Date,
-        default: Date.now
+        default: Date.now,
+        index: true
     }
 });
 

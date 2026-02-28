@@ -12,7 +12,8 @@ const hotelSchema = new mongoose.Schema({
     },
     hotelName: {
         type: String,
-        required: false
+        required: false,
+        index: true
     },
     role: {
         type: String,

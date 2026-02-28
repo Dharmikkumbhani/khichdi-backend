@@ -2,12 +2,14 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const compression = require('compression');
 const authRoutes = require('./routes/auth');
 const hotelRoutes = require('./routes/hotel');
 const menuRoutes = require('./routes/menu');
 const app = express();
 
 // Middleware
+app.use(compression());
 app.use(cors());
 app.use(express.json());
 
