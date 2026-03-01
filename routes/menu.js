@@ -4,6 +4,47 @@ const multer = require('multer');
 const ImageKit = require('imagekit');
 const auth = require('../middleware/auth');
 const Menu = require('../models/Menu');
+const Subscription = require('../models/Subscription');
+const Hotel = require('../models/Hotel');
+const webpush = require('web-push');
+
+// Configure web-push with VAPID keys if not already (it's globally configured, but safe to set again or rely on pushRoute)
+webpush.setVapidDetails(
+    process.env.VAPID_SUBJECT || 'mailto:admin@example.com',
+    process.env.VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+);
+
+async function notifySubscribers(hotelId) {
+    try {
+        const hotel = await Hotel.findById(hotelId);
+        if (!hotel) return;
+
+        const subscriptions = await Subscription.find({ hotelId });
+        const payload = JSON.stringify({
+            title: 'New Daily Menu Update!',
+            body: `${hotel.hotelName || 'Your favorite restaurant'} just updated their daily menu.`,
+            url: '/'
+        });
+
+        const sendPromises = subscriptions.map(async (sub) => {
+            try {
+                await webpush.sendNotification(sub.subscription, payload);
+            } catch (err) {
+                if (err.statusCode === 404 || err.statusCode === 410) {
+                    console.log('Subscription has expired or is no longer valid: ', err);
+                    await Subscription.deleteOne({ _id: sub._id });
+                } else {
+                    console.error('Failed to send push notification: ', err);
+                }
+            }
+        });
+
+        await Promise.all(sendPromises);
+    } catch (error) {
+        console.error('Error notifying subscribers: ', error);
+    }
+}
 
 // Multer configured for memory storage
 const storage = multer.memoryStorage();
@@ -57,6 +98,7 @@ router.post('/upload', auth, upload.single('menuImage'), async (req, res) => {
                 existingMenu.imageUrl = b64;
                 existingMenu.note = note;
                 await existingMenu.save();
+                notifySubscribers(req.user.hotelId);
                 return res.status(200).json({ success: true, message: 'Menu updated locally (MOCK mode)', menu: existingMenu });
             } else {
                 const newMenu = new Menu({
@@ -65,6 +107,7 @@ router.post('/upload', auth, upload.single('menuImage'), async (req, res) => {
                     note: note
                 });
                 await newMenu.save();
+                notifySubscribers(req.user.hotelId);
                 return res.status(200).json({ success: true, message: 'Menu uploaded locally (MOCK mode)', menu: newMenu });
             }
         }
@@ -80,6 +123,7 @@ router.post('/upload', auth, upload.single('menuImage'), async (req, res) => {
             existingMenu.imageUrl = uploadResponse.url;
             existingMenu.note = note;
             await existingMenu.save();
+            notifySubscribers(req.user.hotelId);
             return res.status(200).json({ success: true, message: 'Menu updated successfully', menu: existingMenu });
         } else {
             const newMenu = new Menu({
@@ -88,6 +132,7 @@ router.post('/upload', auth, upload.single('menuImage'), async (req, res) => {
                 note: note
             });
             await newMenu.save();
+            notifySubscribers(req.user.hotelId);
             return res.status(200).json({ success: true, message: 'Menu uploaded successfully', menu: newMenu });
         }
     } catch (error) {

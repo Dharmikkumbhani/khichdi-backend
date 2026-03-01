@@ -131,4 +131,53 @@ router.post('/verify-otp', async (req, res) => {
     }
 });
 
+// @route   POST /api/auth/direct-login
+// @desc    Direct login without OTP
+router.post('/direct-login', async (req, res) => {
+    try {
+        const { mobileNumber, name, hotelName } = req.body;
+
+        if (!mobileNumber) {
+            return res.status(400).json({ success: false, message: 'Mobile number is required' });
+        }
+
+        // Retrieve or create Hotel user
+        let hotel = await Hotel.findOne({ mobileNumber });
+        if (!hotel) {
+            hotel = new Hotel({
+                mobileNumber,
+                name: name || "",
+                hotelName: hotelName || "",
+                role: 'hotel'
+            });
+        } else {
+            // Update existing user with new details if provided
+            if (name) hotel.name = name;
+            if (hotelName) hotel.hotelName = hotelName;
+        }
+        await hotel.save();
+
+        // Generate JWT Token
+        const payload = {
+            hotelId: hotel._id,
+            role: hotel.role
+        };
+
+        const token = jwt.sign(
+            payload,
+            process.env.JWT_SECRET,
+            { expiresIn: '7d' } // Token expiry: 7 days
+        );
+
+        res.status(200).json({
+            success: true,
+            message: 'Login successful',
+            token
+        });
+    } catch (error) {
+        console.error('Error in direct login:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
 module.exports = router;

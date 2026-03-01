@@ -6,6 +6,7 @@ const compression = require('compression');
 const authRoutes = require('./routes/auth');
 const hotelRoutes = require('./routes/hotel');
 const menuRoutes = require('./routes/menu');
+const pushRoutes = require('./routes/push');
 const app = express();
 
 // Middleware
@@ -17,6 +18,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/hotel', hotelRoutes);
 app.use('/api/menu', menuRoutes);
+app.use('/api/push', pushRoutes);
 
 // Database Connection
 mongoose.connect(process.env.MONGO_URI)
