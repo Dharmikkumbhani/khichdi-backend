@@ -19,6 +19,26 @@ const hotelSchema = new mongoose.Schema({
         type: String,
         default: "hotel"
     },
+    price: {
+        type: Number,
+        default: 0
+    },
+    description: {
+        type: String,
+        default: ""
+    },
+    address: {
+        type: String,
+        default: ""
+    },
+    latitude: {
+        type: Number,
+        default: null
+    },
+    longitude: {
+        type: Number,
+        default: null
+    },
     createdAt: {
         type: Date,
         default: Date.now
