@@ -39,6 +39,14 @@ const hotelSchema = new mongoose.Schema({
         type: Number,
         default: null
     },
+    imageUrl: {
+        type: String,
+        default: ""
+    },
+    photos: {
+        type: [String],
+        default: []
+    },
     createdAt: {
         type: Date,
         default: Date.now

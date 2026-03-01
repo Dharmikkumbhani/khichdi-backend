@@ -173,7 +173,7 @@ router.get('/today', async (req, res) => {
         startOfDay.setHours(0, 0, 0, 0);
 
         const menus = await Menu.find({ date: { $gte: startOfDay } })
-            .populate('hotelId', 'hotelName name mobileNumber address price latitude longitude')
+            .populate('hotelId', 'hotelName name mobileNumber address price latitude longitude imageUrl photos')
             .sort({ date: -1 })
             .skip(skip)
             .limit(limit);
