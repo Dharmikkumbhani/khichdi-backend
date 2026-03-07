@@ -7,6 +7,7 @@ const authRoutes = require('./routes/auth');
 const hotelRoutes = require('./routes/hotel');
 const menuRoutes = require('./routes/menu');
 const pushRoutes = require('./routes/push');
+const adminRoutes = require('./routes/admin');
 const app = express();
 
 // Middleware
@@ -19,6 +20,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/hotel', hotelRoutes);
 app.use('/api/menu', menuRoutes);
 app.use('/api/push', pushRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Database Connection
 mongoose.connect(process.env.MONGO_URI)

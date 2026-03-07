@@ -88,6 +88,15 @@ router.post('/upload', auth, upload.single('menuImage'), async (req, res) => {
         }
 
         const note = req.body.note || '';
+        const price = req.body.price;
+
+        if (price !== undefined && price !== '') {
+            const hotelToUpdate = await Hotel.findById(req.user.hotelId);
+            if (hotelToUpdate) {
+                hotelToUpdate.price = Number(price);
+                await hotelToUpdate.save();
+            }
+        }
 
         // Detect if the keys are placeholders or not provided
         if (!process.env.IMAGEKIT_PUBLIC_KEY || process.env.IMAGEKIT_PUBLIC_KEY === 'your_imagekit_public_key' || !imagekit) {

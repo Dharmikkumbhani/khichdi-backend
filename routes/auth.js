@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const rateLimit = require('express-rate-limit');
-const OTP = require('../models/OTP');
 const Hotel = require('../models/Hotel');
 
 // Rate limiting for OTP generation API (prevent spam requests)
@@ -131,31 +131,25 @@ router.post('/verify-otp', async (req, res) => {
     }
 });
 
-// @route   POST /api/auth/direct-login
-// @desc    Direct login without OTP
+// @route   POST /api/auth/direct-login (Reused for password login)
+// @desc    Login with password
 router.post('/direct-login', async (req, res) => {
     try {
-        const { mobileNumber, name, hotelName } = req.body;
+        const { mobileNumber, password } = req.body;
 
-        if (!mobileNumber) {
-            return res.status(400).json({ success: false, message: 'Mobile number is required' });
+        if (!mobileNumber || !password) {
+            return res.status(400).json({ success: false, message: 'Mobile number and password are required' });
         }
 
-        // Retrieve or create Hotel user
-        let hotel = await Hotel.findOne({ mobileNumber });
+        const hotel = await Hotel.findOne({ mobileNumber });
         if (!hotel) {
-            hotel = new Hotel({
-                mobileNumber,
-                name: name || "",
-                hotelName: hotelName || "",
-                role: 'hotel'
-            });
-        } else {
-            // Update existing user with new details if provided
-            if (name) hotel.name = name;
-            if (hotelName) hotel.hotelName = hotelName;
+            return res.status(400).json({ success: false, message: 'Invalid credentials' });
         }
-        await hotel.save();
+
+        const isMatch = await bcrypt.compare(password, hotel.password);
+        if (!isMatch) {
+            return res.status(400).json({ success: false, message: 'Invalid credentials' });
+        }
 
         // Generate JWT Token
         const payload = {
@@ -166,7 +160,7 @@ router.post('/direct-login', async (req, res) => {
         const token = jwt.sign(
             payload,
             process.env.JWT_SECRET,
-            { expiresIn: '7d' } // Token expiry: 7 days
+            { expiresIn: '7d' }
         );
 
         res.status(200).json({
