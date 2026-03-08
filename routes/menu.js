@@ -130,6 +130,7 @@ router.post('/upload', auth, upload.single('menuImage'), async (req, res) => {
 
         if (existingMenu) {
             existingMenu.imageUrl = uploadResponse.url;
+            existingMenu.imagekitFileId = uploadResponse.fileId;
             existingMenu.note = note;
             await existingMenu.save();
             notifySubscribers(req.user.hotelId);
@@ -138,6 +139,7 @@ router.post('/upload', auth, upload.single('menuImage'), async (req, res) => {
             const newMenu = new Menu({
                 hotelId: req.user.hotelId,
                 imageUrl: uploadResponse.url,
+                imagekitFileId: uploadResponse.fileId,
                 note: note
             });
             await newMenu.save();

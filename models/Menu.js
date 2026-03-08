@@ -11,6 +11,10 @@ const menuSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    imagekitFileId: {
+        type: String,
+        default: ''
+    },
     note: {
         type: String,
         default: ''

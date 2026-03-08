@@ -43,7 +43,12 @@ app.use('/api/admin', adminRoutes);
 
 // Database Connection
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("MongoDB Connected"))
+  .then(() => {
+    console.log("MongoDB Connected");
+    // Start background cron jobs once DB is connected
+    const scheduleCronJobs = require('./cron');
+    scheduleCronJobs();
+  })
   .catch((err) => console.error("MongoDB connection error:", err));
 
 const PORT = process.env.PORT || 5000;

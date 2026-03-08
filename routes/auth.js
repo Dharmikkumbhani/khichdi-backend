@@ -20,6 +20,10 @@ router.post('/direct-login', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Invalid credentials' });
         }
 
+        if (!hotel.password) {
+            return res.status(400).json({ success: false, message: 'Password not set for this account. Please contact Admin.' });
+        }
+
         const isMatch = await bcrypt.compare(password, hotel.password);
         if (!isMatch) {
             return res.status(400).json({ success: false, message: 'Invalid credentials' });
