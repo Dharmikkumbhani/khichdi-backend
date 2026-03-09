@@ -39,6 +39,10 @@ app.options('*', cors());
 
 // Standard Middleware
 app.use(compression());
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
 app.use(express.json());
 
 // Routes
