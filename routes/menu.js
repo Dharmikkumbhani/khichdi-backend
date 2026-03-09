@@ -161,9 +161,11 @@ router.get('/history', auth, async (req, res) => {
         const skip = (page - 1) * limit;
 
         const menus = await Menu.find({ hotelId: req.user.hotelId })
+            .select('imageUrl note date')
             .sort({ date: -1 })
             .skip(skip)
-            .limit(limit);
+            .limit(limit)
+            .lean();
 
         res.status(200).json({ success: true, menus, page, limit });
     } catch (error) {
@@ -184,10 +186,12 @@ router.get('/today', async (req, res) => {
         startOfDay.setHours(0, 0, 0, 0);
 
         const menus = await Menu.find({ date: { $gte: startOfDay } })
-            .populate('hotelId', 'hotelName name mobileNumber address price latitude longitude imageUrl photos')
+            .select('hotelId imageUrl date note')
+            .populate('hotelId', 'hotelName name address price latitude longitude imageUrl photos')
             .sort({ date: -1 })
             .skip(skip)
-            .limit(limit);
+            .limit(limit)
+            .lean();
 
         res.status(200).json({ success: true, menus, page, limit });
     } catch (error) {
@@ -223,6 +227,7 @@ router.get('/latest', async (req, res) => {
                 }
             },
             { $unwind: '$hotel' },
+            { $project: { 'hotel.password': 0, 'hotel.mobileNumber': 0, 'hotel.__v': 0, '__v': 0 } },
             { $skip: skip },
             { $limit: limit }
         ]);
@@ -231,6 +236,24 @@ router.get('/latest', async (req, res) => {
     } catch (error) {
         console.error('Error fetching latest menus:', error);
         res.status(500).json({ success: false, message: 'Server error fetching menus' });
+    }
+});
+
+// @route   GET /api/menu/hotel/:hotelId/past
+// @desc    Get the past 7 menus for a specific hotel (PUBLIC)
+router.get('/hotel/:hotelId/past', async (req, res) => {
+    try {
+        const hotelId = req.params.hotelId;
+        const menus = await Menu.find({ hotelId })
+            .select('imageUrl date note')
+            .sort({ date: -1 })
+            .limit(7)
+            .lean();
+
+        res.status(200).json({ success: true, menus });
+    } catch (error) {
+        console.error('Error fetching past menus:', error);
+        res.status(500).json({ success: false, message: 'Server error fetching past menus' });
     }
 });
 

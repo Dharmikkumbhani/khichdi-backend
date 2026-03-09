@@ -24,11 +24,17 @@ try {
 // Get all hotels
 router.get('/hotels', async (req, res) => {
     try {
-        const hotels = await Hotel.find().lean().sort({ createdAt: -1 });
+        // Fetch only public fields required by the UI map frontend
+        const hotels = await Hotel.find()
+            .select('_id name hotelName price address latitude longitude photos imageUrl')
+            .lean()
+            .sort({ createdAt: -1 });
 
         const startOfDay = new Date();
         startOfDay.setHours(0, 0, 0, 0);
-        const menus = await Menu.find({ date: { $gte: startOfDay } }).lean();
+        const menus = await Menu.find({ date: { $gte: startOfDay } })
+            .select('hotelId imageUrl date note')
+            .lean();
 
         const menuMap = {};
         menus.forEach(m => { menuMap[m.hotelId.toString()] = m; });
@@ -108,10 +114,16 @@ router.post('/hotel', upload.array('ambiance', 10), async (req, res) => {
 // Get specific hotel
 router.get('/hotel/:id', async (req, res) => {
     try {
-        const hotel = await Hotel.findById(req.params.id).lean();
+        const hotel = await Hotel.findById(req.params.id)
+            .select('-password -mobileNumber -__v')
+            .lean();
         if (!hotel) return res.status(404).json({ msg: 'Hotel not found' });
 
-        const recentMenus = await Menu.find({ hotelId: req.params.id }).sort({ date: -1 }).limit(10).lean();
+        const recentMenus = await Menu.find({ hotelId: req.params.id })
+            .select('imageUrl date note')
+            .sort({ date: -1 })
+            .limit(10)
+            .lean();
 
         res.json({ success: true, hotel, recentMenus });
     } catch (err) {
