@@ -48,7 +48,7 @@ router.get('/hotels', async (req, res) => {
 // Create a new hotel
 router.post('/hotel', upload.array('ambiance', 10), async (req, res) => {
     try {
-        const { mobileNumber, password, name, hotelName, price, description, latitude, longitude } = req.body;
+        const { mobileNumber, password, name, hotelName, price, description, address, latitude, longitude } = req.body;
 
         if (!mobileNumber || !password) {
             return res.status(400).json({ success: false, message: 'Mobile number and password are required' });
@@ -88,6 +88,7 @@ router.post('/hotel', upload.array('ambiance', 10), async (req, res) => {
             hotelName: hotelName || "",
             price: price || 0,
             description: description || "",
+            address: address || "",
             latitude: latitude || null,
             longitude: longitude || null,
             photos: uploadedUrls,
@@ -122,7 +123,7 @@ router.get('/hotel/:id', async (req, res) => {
 // Update specific hotel
 router.put('/hotel/:id', async (req, res) => {
     try {
-        const { hotelName, price, description, mobileNumber } = req.body;
+        const { hotelName, price, description, address, mobileNumber } = req.body;
         let hotel = await Hotel.findById(req.params.id);
 
         if (!hotel) return res.status(404).json({ msg: 'Hotel not found' });
@@ -130,6 +131,7 @@ router.put('/hotel/:id', async (req, res) => {
         if (hotelName !== undefined) hotel.hotelName = hotelName;
         if (price !== undefined) hotel.price = price;
         if (description !== undefined) hotel.description = description;
+        if (address !== undefined) hotel.address = address;
         if (mobileNumber !== undefined) hotel.mobileNumber = mobileNumber;
 
         await hotel.save();
