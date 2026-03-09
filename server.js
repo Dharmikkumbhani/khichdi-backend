@@ -26,12 +26,19 @@ const apiLimiter = rateLimit({
 // Apply the rate limiting middleware strictly to all API calls
 app.use('/api/', apiLimiter);
 
+// CORS must come before helmet() so its headers aren't overridden by helmet's
+// Cross-Origin-Resource-Policy and other security headers.
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+
+// Respond to all preflight OPTIONS requests immediately
+app.options('*', cors());
+
 // Standard Middleware
 app.use(compression());
-app.use(cors({
-  // origin: 'https://khichdi-admin.com', // Uncomment and add your real web admin domain when ready
-  origin: '*'
-}));
 app.use(express.json());
 
 // Routes
