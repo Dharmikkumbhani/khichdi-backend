@@ -39,11 +39,12 @@ app.options('*', cors());
 
 // Standard Middleware
 app.use(compression());
-<<<<<<< Updated upstream
-=======
-
->>>>>>> Stashed changes
 app.use(express.json());
+
+// UptimeRobot /ping route
+app.get('/ping', (req, res) => {
+  res.status(200).send('Pong!');
+});
 
 // Routes
 app.use('/api/auth', authRoutes);
