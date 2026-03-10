@@ -51,6 +51,11 @@ const hotelSchema = new mongoose.Schema({
         type: [String],
         default: []
     },
+    hotelType: {
+        type: String,
+        enum: ["fixed", "dynamic"],
+        default: "dynamic"
+    },
     createdAt: {
         type: Date,
         default: Date.now

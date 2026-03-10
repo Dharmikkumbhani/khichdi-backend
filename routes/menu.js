@@ -71,19 +71,24 @@ router.post('/upload', auth, upload.single('menuImage'), async (req, res) => {
             return res.status(400).json({ success: false, message: 'No image provided' });
         }
 
+        const hotelToUpdate = await Hotel.findById(req.user.hotelId);
+        const isFixed = hotelToUpdate && hotelToUpdate.hotelType === 'fixed';
+
         // Check if menu for today already exists
         let existingMenu = null;
-        const latestMenu = await Menu.findOne({ hotelId: req.user.hotelId }).sort({ date: -1 });
+        if (!isFixed) {
+            const latestMenu = await Menu.findOne({ hotelId: req.user.hotelId }).sort({ date: -1 });
 
-        if (latestMenu) {
-            const today = new Date();
-            const menuDate = new Date(latestMenu.date);
+            if (latestMenu) {
+                const today = new Date();
+                const menuDate = new Date(latestMenu.date);
 
-            // Check if they are the exact same local day
-            if (menuDate.getDate() === today.getDate() &&
-                menuDate.getMonth() === today.getMonth() &&
-                menuDate.getFullYear() === today.getFullYear()) {
-                existingMenu = latestMenu;
+                // Check if they are the exact same local day
+                if (menuDate.getDate() === today.getDate() &&
+                    menuDate.getMonth() === today.getMonth() &&
+                    menuDate.getFullYear() === today.getFullYear()) {
+                    existingMenu = latestMenu;
+                }
             }
         }
 
@@ -91,7 +96,6 @@ router.post('/upload', auth, upload.single('menuImage'), async (req, res) => {
         const price = req.body.price;
 
         if (price !== undefined && price !== '') {
-            const hotelToUpdate = await Hotel.findById(req.user.hotelId);
             if (hotelToUpdate) {
                 hotelToUpdate.price = Number(price);
                 await hotelToUpdate.save();
@@ -244,10 +248,13 @@ router.get('/latest', async (req, res) => {
 router.get('/hotel/:hotelId/past', async (req, res) => {
     try {
         const hotelId = req.params.hotelId;
+        const hotel = await Hotel.findById(hotelId);
+        const limit = hotel && hotel.hotelType === 'fixed' ? 50 : 7;
+
         const menus = await Menu.find({ hotelId })
             .select('imageUrl date note')
             .sort({ date: -1 })
-            .limit(7)
+            .limit(limit)
             .lean();
 
         res.status(200).json({ success: true, menus });

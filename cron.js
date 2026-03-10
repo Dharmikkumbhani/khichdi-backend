@@ -1,6 +1,7 @@
 const cron = require('node-cron');
 const Menu = require('./models/Menu');
 const ImageKit = require('imagekit');
+const Hotel = require('./models/Hotel');
 
 // Initialize ImageKit
 let imagekit = null;
@@ -23,7 +24,13 @@ const scheduleCronJobs = () => {
             const sevenDaysAgo = new Date();
             sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-            const oldMenus = await Menu.find({ date: { $lt: sevenDaysAgo } });
+            const fixedHotels = await Hotel.find({ hotelType: 'fixed' }).select('_id');
+            const fixedHotelIds = fixedHotels.map(h => h._id);
+
+            const oldMenus = await Menu.find({
+                date: { $lt: sevenDaysAgo },
+                hotelId: { $nin: fixedHotelIds }
+            });
             console.log(`Found ${oldMenus.length} old menus to clean up.`);
 
             for (const menu of oldMenus) {
