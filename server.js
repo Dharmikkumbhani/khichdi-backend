@@ -12,6 +12,10 @@ const pushRoutes = require('./routes/push');
 const adminRoutes = require('./routes/admin');
 const app = express();
 
+// Trust the first proxy (e.g., Render, Heroku, Nginx)
+// Fixes ERR_ERL_UNEXPECTED_X_FORWARDED_FOR with express-rate-limit
+app.set('trust proxy', 1);
+
 // Security Middlewares
 // CORS must come before helmet() so its headers aren't overridden by helmet's
 // Cross-Origin-Resource-Policy and other security headers.
