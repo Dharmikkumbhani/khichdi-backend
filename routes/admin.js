@@ -232,11 +232,17 @@ router.post('/hotel/:id/menu', upload.array('menuImages', 10), async (req, res) 
 
             if (!isFixed && existingMenu && i === 0) {
                 existingMenu.imageUrl = uploadResponse.url;
+                existingMenu.imagekitFileId = uploadResponse.fileId;
                 existingMenu.note = note;
                 await existingMenu.save();
                 uploadedMenus.push(existingMenu);
             } else {
-                const newMenu = new Menu({ hotelId: req.params.id, imageUrl: uploadResponse.url, note });
+                const newMenu = new Menu({ 
+                    hotelId: req.params.id, 
+                    imageUrl: uploadResponse.url, 
+                    imagekitFileId: uploadResponse.fileId,
+                    note 
+                });
                 await newMenu.save();
                 uploadedMenus.push(newMenu);
             }
