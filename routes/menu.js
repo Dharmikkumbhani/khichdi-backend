@@ -72,7 +72,7 @@ router.post('/upload', auth, upload.single('menuImage'), async (req, res) => {
         }
 
         const hotelToUpdate = await Hotel.findById(req.user.hotelId);
-        const isFixed = hotelToUpdate && hotelToUpdate.hotelType === 'fixed';
+        const isFixed = hotelToUpdate && (hotelToUpdate.hotelType === 'fixed' || hotelToUpdate.hotelType === 'fastfood');
 
         // Check if menu for today already exists
         let existingMenu = null;
@@ -249,7 +249,7 @@ router.get('/hotel/:hotelId/past', async (req, res) => {
     try {
         const hotelId = req.params.hotelId;
         const hotel = await Hotel.findById(hotelId);
-        const limit = hotel && hotel.hotelType === 'fixed' ? 50 : 7;
+        const limit = hotel && (hotel.hotelType === 'fixed' || hotel.hotelType === 'fastfood') ? 50 : 7;
 
         const menus = await Menu.find({ hotelId })
             .select('imageUrl date note')

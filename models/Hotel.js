@@ -27,6 +27,10 @@ const hotelSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    showPrice: {
+        type: Boolean,
+        default: true
+    },
     description: {
         type: String,
         default: ""
@@ -53,7 +57,7 @@ const hotelSchema = new mongoose.Schema({
     },
     hotelType: {
         type: String,
-        enum: ["fixed", "dynamic"],
+        enum: ["fixed", "dynamic", "fastfood"],
         default: "dynamic"
     },
     createdAt: {

@@ -26,7 +26,7 @@ router.get('/hotels', async (req, res) => {
     try {
         // Fetch only public fields required by the UI map frontend
         const hotels = await Hotel.find()
-            .select('_id name hotelName price address latitude longitude photos imageUrl hotelType')
+            .select('_id name hotelName price showPrice address latitude longitude photos imageUrl hotelType')
             .lean()
             .sort({ createdAt: -1 });
 
@@ -36,7 +36,7 @@ router.get('/hotels', async (req, res) => {
             .select('hotelId imageUrl date note')
             .lean();
 
-        const fixedHotelIds = hotels.filter(h => h.hotelType === 'fixed').map(h => h._id);
+        const fixedHotelIds = hotels.filter(h => h.hotelType === 'fixed' || h.hotelType === 'fastfood').map(h => h._id);
         const fixedMenus = await Menu.aggregate([
             { $match: { hotelId: { $in: fixedHotelIds } } },
             { $sort: { date: -1 } },
@@ -68,7 +68,7 @@ router.get('/hotels', async (req, res) => {
 // Create a new hotel
 router.post('/hotel', upload.array('ambiance', 10), async (req, res) => {
     try {
-        const { mobileNumber, password, name, hotelName, price, description, address, latitude, longitude, hotelType } = req.body;
+        const { mobileNumber, password, name, hotelName, price, showPrice, description, address, latitude, longitude, hotelType } = req.body;
 
         if (!mobileNumber || !password) {
             return res.status(400).json({ success: false, message: 'Mobile number and password are required' });
@@ -107,6 +107,7 @@ router.post('/hotel', upload.array('ambiance', 10), async (req, res) => {
             name: name || "",
             hotelName: hotelName || "",
             price: price || 0,
+            showPrice: showPrice !== undefined ? showPrice !== 'false' && showPrice !== false : true,
             description: description || "",
             address: address || "",
             latitude: latitude || null,
@@ -151,13 +152,14 @@ router.get('/hotel/:id', async (req, res) => {
 // Update specific hotel
 router.put('/hotel/:id', async (req, res) => {
     try {
-        const { hotelName, price, description, address, mobileNumber, hotelType } = req.body;
+        const { hotelName, price, showPrice, description, address, mobileNumber, hotelType } = req.body;
         let hotel = await Hotel.findById(req.params.id);
 
         if (!hotel) return res.status(404).json({ msg: 'Hotel not found' });
 
         if (hotelName !== undefined) hotel.hotelName = hotelName;
         if (price !== undefined) hotel.price = price;
+        if (showPrice !== undefined) hotel.showPrice = showPrice;
         if (description !== undefined) hotel.description = description;
         if (address !== undefined) hotel.address = address;
         if (mobileNumber !== undefined) hotel.mobileNumber = mobileNumber;
@@ -182,7 +184,7 @@ router.post('/hotel/:id/menu', upload.array('menuImages', 10), async (req, res) 
         const hotel = await Hotel.findById(req.params.id);
         if (!hotel) return res.status(404).json({ success: false, message: 'Hotel not found' });
 
-        const isFixed = hotel.hotelType === 'fixed';
+        const isFixed = hotel.hotelType === 'fixed' || hotel.hotelType === 'fastfood';
 
         // Check if menu for today already exists
         let existingMenu = null;
