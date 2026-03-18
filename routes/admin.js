@@ -173,6 +173,47 @@ router.put('/hotel/:id', async (req, res) => {
     }
 });
 
+// Upload ambiance photos for a specific hotel (admin only)
+router.post('/hotel/:id/ambiance', upload.array('ambiance', 20), async (req, res) => {
+    try {
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ success: false, message: 'No images provided' });
+        }
+
+        const hotel = await Hotel.findById(req.params.id);
+        if (!hotel) return res.status(404).json({ success: false, message: 'Hotel not found' });
+
+        let uploadedUrls = [];
+
+        if (!process.env.IMAGEKIT_PUBLIC_KEY || process.env.IMAGEKIT_PUBLIC_KEY === 'your_imagekit_public_key' || !imagekit) {
+            // Fallback: base64 encode
+            uploadedUrls = req.files.map(f => 'data:' + f.mimetype + ';base64,' + f.buffer.toString('base64'));
+        } else {
+            const uploadPromises = req.files.map((f, i) =>
+                imagekit.upload({
+                    file: f.buffer,
+                    fileName: `ambiance_${req.params.id}_${Date.now()}_${i}`,
+                    folder: '/hotels'
+                })
+            );
+            const results = await Promise.all(uploadPromises);
+            uploadedUrls = results.map(r => r.url);
+        }
+
+        // Append new photos & update imageUrl if not set
+        hotel.photos = [...(hotel.photos || []), ...uploadedUrls];
+        if (!hotel.imageUrl && uploadedUrls.length > 0) {
+            hotel.imageUrl = uploadedUrls[0];
+        }
+
+        await hotel.save();
+        res.json({ success: true, photos: hotel.photos, imageUrl: hotel.imageUrl });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
 // Upload menu for specific hotel without needing their auth
 router.post('/hotel/:id/menu', upload.array('menuImages', 10), async (req, res) => {
     try {
