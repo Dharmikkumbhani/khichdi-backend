@@ -24,12 +24,12 @@ const scheduleCronJobs = () => {
             const sevenDaysAgo = new Date();
             sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-            const fixedHotels = await Hotel.find({ hotelType: 'fixed' }).select('_id');
-            const fixedHotelIds = fixedHotels.map(h => h._id);
+            const nonDynamicHotels = await Hotel.find({ hotelType: { $in: ['fixed', 'fastfood'] } }).select('_id');
+            const nonDynamicHotelIds = nonDynamicHotels.map(h => h._id);
 
             const oldMenus = await Menu.find({
                 date: { $lt: sevenDaysAgo },
-                hotelId: { $nin: fixedHotelIds }
+                hotelId: { $nin: nonDynamicHotelIds }
             });
             console.log(`Found ${oldMenus.length} old menus to clean up.`);
 
