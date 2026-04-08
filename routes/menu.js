@@ -6,16 +6,15 @@ const auth = require('../middleware/auth');
 const Menu = require('../models/Menu');
 const Subscription = require('../models/Subscription');
 const Hotel = require('../models/Hotel');
-const webpush = require('web-push');
+const { webpush, configureWebPush } = require('../lib/webpush');
 
-// Configure web-push with VAPID keys if not already (it's globally configured, but safe to set again or rely on pushRoute)
-webpush.setVapidDetails(
-    process.env.VAPID_SUBJECT || 'mailto:admin@example.com',
-    process.env.VAPID_PUBLIC_KEY,
-    process.env.VAPID_PRIVATE_KEY
-);
+const pushEnabled = configureWebPush();
 
 async function notifySubscribers(hotelId) {
+    if (!pushEnabled) {
+        return;
+    }
+
     try {
         const hotel = await Hotel.findById(hotelId);
         if (!hotel) return;

@@ -1,24 +1,26 @@
 const express = require('express');
 const router = express.Router();
-const webpush = require('web-push');
 const Subscription = require('../models/Subscription');
 const Hotel = require('../models/Hotel');
+const { configureWebPush } = require('../lib/webpush');
 
-// Configure web-push with VAPID keys
-webpush.setVapidDetails(
-    process.env.VAPID_SUBJECT || 'mailto:admin@example.com',
-    process.env.VAPID_PUBLIC_KEY,
-    process.env.VAPID_PRIVATE_KEY
-);
+const pushEnabled = configureWebPush();
 
 // Route to get VAPID public key
 router.get('/vapidPublicKey', (req, res) => {
-    res.json({ publicKey: process.env.VAPID_PUBLIC_KEY });
+    res.json({
+        publicKey: pushEnabled ? process.env.VAPID_PUBLIC_KEY : null,
+        pushEnabled,
+    });
 });
 
 // Route to subscribe to push notifications for a specific hotel
 router.post('/subscribe', async (req, res) => {
     try {
+        if (!pushEnabled) {
+            return res.status(503).json({ error: 'Push notifications are not configured on the server' });
+        }
+
         const { hotelId, subscription } = req.body;
 
         if (!hotelId || !subscription) {
@@ -48,6 +50,10 @@ router.post('/subscribe', async (req, res) => {
 // Route to unsubscribe from push notifications
 router.post('/unsubscribe', async (req, res) => {
     try {
+        if (!pushEnabled) {
+            return res.status(503).json({ error: 'Push notifications are not configured on the server' });
+        }
+
         const { hotelId, endpoint } = req.body;
 
         if (!hotelId || !endpoint) {
